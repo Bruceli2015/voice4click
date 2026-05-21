@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机械解压键盘-录音持久化版</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;user-select:none;}
+        body{
+            min-height:100vh;
+            background: linear-gradient(145deg,#e8ecf5,#d2d9e8);
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;
+            padding:20px;
+            position:relative;
+        }
+        .title{
+            font-size:26px;
+            color:#1c1c1e;
+            margin-bottom:10px;
+            font-weight:600;
+            letter-spacing:0.5px;
+        }
+        .user-box{
+            display:flex;
+            gap:10px;
+            margin-bottom:12px;
+            align-items:center;
+            flex-wrap:wrap;
+            justify-content:center;
+        }
+        .user-select{
+            padding:6px 10px;
+            border-radius:8px;
+            border:none;
+            background:rgba(255,255,255,0.5);
+            outline:none;
+        }
+        .file-btn,.new-user-btn{
+            padding:6px 12px;
+            border:none;
+            border-radius:8px;
+            background:#222;
+            color:#fff;
+            cursor:pointer;
+            font-size:12px;
+        }
+        .new-user-btn{
+            background:#007aff;
+        }
+        .rec-wrap{
+            display:flex;
+            gap:12px;
+            margin-bottom:12px;
+        }
+        .col{
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+        }
+        .rec-tips{
+            font-size:16px;
+            color:#9c27b0;
+            margin-bottom:18px;
+            height:22px;
+            text-align:center;
+            font-weight:500;
+        }
+        .rec-btn{
+            padding:8px 16px;
+            border-radius:10px;
+            border:none;
+            color:#fff;
+            cursor:pointer;
+            font-size:13px;
+        }
+        .start{background:#9c27b0;}
+        .stop{background:#ef4444;}
+        .play{background:#0d9488;}
+        .gear-set{
+            position:fixed;
+            top:24px;
+            right:24px;
+            width:46px;
+            height:46px;
+            border-radius:50%;
+            border:1px solid rgba(255,255,255,0.6);
+            background:rgba(255,255,255,0.35);
+            backdrop-filter:blur(18px);
+            color:#1d1d1f;
+            font-size:24px;
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 16px rgba(0,0,0,0.08);
+            z-index:100;
+        }
+        .set-panel{
+            width:420px;
+            max-height:80vh;
+            overflow-y:auto;
+            background:rgba(255,255,255,0.32);
+            backdrop-filter:blur(22px);
+            border:1px solid rgba(255,255,255,0.6);
+            border-radius:22px;
+            padding:24px;
+            margin-bottom:24px;
+            display:none;
+            z-index:99;
+        }
+        .set-item{margin:16px 0;}
+        .set-item label{display:block;margin-bottom:8px;font-weight:500;color:#1c1c1e;}
+        .lang-btn{
+            padding:7px 14px;
+            margin-right:10px;
+            border:none;
+            background:rgba(255,255,255,0.4);
+            border-radius:10px;
+            cursor:pointer;
+        }
+        .lang-btn.active{background:#007aff;color:#fff;}
+        select,input.text-inp{
+            width:100%;
+            padding:11px 14px;
+            border:none;
+            border-radius:14px;
+            background:rgba(255,255,255,0.4);
+            outline:none;
+        }
+        .btn-text-group{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        .color-row{display:flex;align-items:center;gap:10px;margin:8px 0;}
+        .save-set{
+            width:100%;
+            margin-top:12px;
+            padding:12px;
+            background:#007aff;
+            color:#fff;
+            border:none;
+            border-radius:14px;
+            cursor:pointer;
+            font-size:16px;
+        }
+        .keyboard{
+            width:330px;height:330px;
+            background:rgba(255,255,255,0.28);
+            backdrop-filter:blur(26px);
+            border:1px solid rgba(255,255,255,0.65);
+            padding:18px;
+            border-radius:28px;
+        }
+        .grid-box{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;height:100%;}
+        .press-btn{
+            border-radius:20px;
+            border:none;
+            font-size:40px;
+            font-weight:600;
+            cursor:pointer;
+            transition:all 0.12s ease;
+            box-shadow:0 5px 14px rgba(0,0,0,0.06);
+            color:#1c1c1e;
+            background:#ffffff;
+        }
+        .press-btn.active{transform:translateY(5px) scale(0.97);box-shadow:inset 0 2px 8px rgba(0,0,0,0.1);}
+        #fileInput{display:none;}
+        .modal{
+            display:none;
+            position:fixed;
+            top:0;left:0;
+            width:100%;height:100%;
+            background:rgba(0,0,0,0.5);
+            z-index:200;
+            align-items:center;
+            justify-content:center;
+        }
+        .modal-content{
+            background:#fff;
+            padding:20px;
+            border-radius:16px;
+            width:300px;
+            text-align:center;
+        }
+        .modal-content input{
+            width:100%;
+            padding:10px;
+            border-radius:8px;
+            border:1px solid #ccc;
+            margin:12px 0;
+        }
+        .modal-content button{
+            padding:8px 16px;
+            border:none;
+            border-radius:8px;
+            background:#007aff;
+            color:#fff;
+            cursor:pointer;
+            margin:0 5px;
+        }
+    </style>
+</head>
+<body>
+    <button class="gear-set" id="openSet">⚙</button>
+    <h2 class="title" id="mainTitle">机械解压键盘-录音持久化版</h2>
+
+    <div class="user-box">
+        <select class="user-select" id="userSel"></select>
+        <button class="new-user-btn" id="newUserBtn">新建用户</button>
+        <button class="file-btn" id="exportBak">导出BAK</button>
+        <button class="file-btn" id="importBak">导入BAK</button>
+        <input type="file" id="fileInput" accept=".bak">
+    </div>
+
+    <div class="rec-wrap">
+        <div class="col">
+            <button class="rec-btn start" id="s1">录制1</button>
+            <button class="rec-btn start" id="s2">录制2</button>
+            <button class="rec-btn start" id="s3">录制3</button>
+            <button class="rec-btn start" id="s4">录制4</button>
+        </div>
+        <div class="col">
+            <button class="rec-btn stop" id="e1">停止1</button>
+            <button class="rec-btn stop" id="e2">停止2</button>
+            <button class="rec-btn stop" id="e3">停止3</button>
+            <button class="rec-btn stop" id="e4">停止4</button>
+        </div>
+        <div class="col">
+            <button class="rec-btn play" id="p1">试听1</button>
+            <button class="rec-btn play" id="p2">试听2</button>
+            <button class="rec-btn play" id="p3">试听3</button>
+            <button class="rec-btn play" id="p4">试听4</button>
+        </div>
+    </div>
+
+    <div class="rec-tips" id="tipText">就绪</div>
+
+    <div class="keyboard">
+        <div class="grid-box">
+            <button class="press-btn" data-num="0">①</button>
+            <button class="press-btn" data-num="1">②</button>
+            <button class="press-btn" data-num="2">③</button>
+            <button class="press-btn" data-num="3">④</button>
+        </div>
+    </div>
+
+    <div class="set-panel" id="setBox">
+        <div class="set-item">
+            <label>界面语言</label>
+            <button class="lang-btn active" data-lang="zh">中文</button>
+            <button class="lang-btn" data-lang="en">English</button>
+        </div>
+        <div class="set-item">
+            <label>机械按键音效</label>
+            <select id="soundSel">
+                <option value="light">轻柔小声</option>
+                <option value="mid">标准清脆</option>
+                <option value="loud">响亮轴音</option>
+            </select>
+        </div>
+        <div class="set-item">
+            <label>自定义按键文字</label>
+            <div class="btn-text-group">
+                <input class="text-inp" id="in1" value="①">
+                <input class="text-inp" id="in2" value="②">
+                <input class="text-inp" id="in3" value="③">
+                <input class="text-inp" id="in4" value="④">
+            </div>
+        </div>
+        <div class="set-item"><label>按键1颜色</label><input type="color" id="c1" value="#ffffff"></div>
+        <div class="set-item"><label>按键2颜色</label><input type="color" id="c2" value="#ffffff"></div>
+        <div class="set-item"><label>按键3颜色</label><input type="color" id="c3" value="#ffffff"></div>
+        <div class="set-item"><label>按键4颜色</label><input type="color" id="c4" value="#ffffff"></div>
+        <button class="save-set" id="saveBtn">保存设置</button>
+    </div>
+
+    <div class="modal" id="newUserModal">
+        <div class="modal-content">
+            <h3>新建用户</h3>
+            <input type="text" id="newUserName" placeholder="输入用户名" maxlength="10">
+            <div>
+                <button id="cancelNewUser">取消</button>
+                <button id="confirmNewUser">确定</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+let tipText = document.getElementById('tipText');
+let keyAudio = ['','','','']; // 内存中：data:audio/mpeg;base64,...
+let recordIns = [null,null,null,null];
+let audioStream = [null,null,null,null];
+let soundVol = 0.3;
+let audioCtx = null;
+
+const userSel = document.getElementById('userSel');
+const newUserBtn = document.getElementById('newUserBtn');
+const newUserModal = document.getElementById('newUserModal');
+const cancelNewUser = document.getElementById('cancelNewUser');
+const confirmNewUser = document.getElementById('confirmNewUser');
+const newUserName = document.getElementById('newUserName');
+const exportBak = document.getElementById('exportBak');
+const importBak = document.getElementById('importBak');
+const fileInput = document.getElementById('fileInput');
+
+// 用户数据：audio 存 base64
+let userData = {};
+let nowUser = "Public";
+
+// --- 工具：Blob → Base64 ---
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+// --- 工具：Base64 → Blob ---
+function base64ToBlob(base64) {
+    if (!base64 || !base64.startsWith('data:audio')) return null;
+    const arr = base64.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    return new Blob([u8arr], { type: mime });
+}
+
+// --- 初始化用户数据 ---
+function initUserData(){
+    let saved = localStorage.getItem("keyboardUserData");
+    if(saved){
+        userData = JSON.parse(saved);
+    }else{
+        userData = {
+            "Public":{
+                texts:["①","②","③","④"],
+                colors:["#ffffff","#ffffff","#ffffff","#ffffff"],
+                vol:0.3,
+                audio:["","","",""] // base64
+            }
+        };
+    }
+    refreshUserSelect();
+}
+
+function refreshUserSelect(){
+    userSel.innerHTML = "";
+    let users = Object.keys(userData);
+    users.forEach(u=>{
+        let opt = document.createElement("option");
+        opt.value = u;
+        opt.textContent = u;
+        if(u === nowUser) opt.selected = true;
+        userSel.appendChild(opt);
+    });
+}
+
+function saveToLocal(){
+    localStorage.setItem("keyboardUserData", JSON.stringify(userData));
+}
+
+// --- 加载用户配置（含 base64 音频）---
+function loadUserConfig(){
+    let data = userData[nowUser];
+    soundVol = data.vol;
+    keyAudio = [...data.audio]; // 直接拿 base64
+    in1.value=data.texts[0];in2.value=data.texts[1];
+    in3.value=data.texts[2];in4.value=data.texts[3];
+    c1.value=data.colors[0];c2.value=data.colors[1];
+    c3.value=data.colors[2];c4.value=data.colors[3];
+    let btns = document.querySelectorAll('.press-btn');
+    btns[0].innerText=data.texts[0];
+    btns[1].innerText=data.texts[1];
+    btns[2].innerText=data.texts[2];
+    btns[3].innerText=data.texts[3];
+    btns[0].style.background=data.colors[0];
+    btns[1].style.background=data.colors[1];
+    btns[2].style.background=data.colors[2];
+    btns[3].style.background=data.colors[3];
+}
+
+// --- 保存用户配置（把 keyAudio base64 存进去）---
+function saveUserConfig(){
+    let btns = document.querySelectorAll('.press-btn');
+    userData[nowUser].vol = soundVol;
+    userData[nowUser].audio = [...keyAudio]; // 存 base64
+    userData[nowUser].texts = [in1.value,in2.value,in3.value,in4.value];
+    userData[nowUser].colors = [c1.value,c2.value,c3.value,c4.value];
+    saveToLocal();
+}
+
+// --- 切换用户 ---
+userSel.onchange = function(){
+    saveUserConfig();
+    nowUser = this.value;
+    loadUserConfig();
+    tipText.innerText=`已切换：${nowUser}`;
+    setTimeout(()=>tipText.innerText="就绪",1500);
+};
+
+// --- 新建用户 ---
+newUserBtn.onclick = function(){
+    newUserName.value = "";
+    newUserModal.style.display = "flex";
+};
+cancelNewUser.onclick = function(){
+    newUserModal.style.display = "none";
+};
+confirmNewUser.onclick = function(){
+    let name = newUserName.value.trim();
+    if(!name){
+        tipText.innerText="用户名不能为空！";
+        setTimeout(()=>tipText.innerText="就绪",1500);
+        return;
+    }
+    if(userData[name]){
+        tipText.innerText="用户已存在！";
+        setTimeout(()=>tipText.innerText="就绪",1500);
+        return;
+    }
+    userData[name] = {
+        texts:["①","②","③","④"],
+        colors:["#ffffff","#ffffff","#ffffff","#ffffff"],
+        vol:0.3,
+        audio:["","","",""]
+    };
+    saveToLocal();
+    refreshUserSelect();
+    nowUser = name;
+    userSel.value = name;
+    loadUserConfig();
+    newUserModal.style.display = "none";
+    tipText.innerText=`新建用户：${name}`;
+    setTimeout(()=>tipText.innerText="就绪",1500);
+};
+
+// --- 音频上下文 ---
+document.body.addEventListener('click',()=>{
+    if(!audioCtx) audioCtx = new (window.AudioContext || webkitAudioContext)();
+},{once:true});
+
+// --- 机械敲击音 ---
+function playKeySound(){
+    if(!audioCtx) return;
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+    gain.gain.value = soundVol;
+    osc.type = 'square';
+    osc.frequency.value = 1200;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08);
+    osc.stop(audioCtx.currentTime+0.08);
+}
+
+// --- 按键点击 ---
+document.querySelectorAll('.press-btn').forEach(btn=>{
+    let n = parseInt(btn.dataset.num);
+    btn.addEventListener('mousedown',()=>{
+        btn.classList.add('active');
+        playKeySound();
+        if(keyAudio[n]) new Audio(keyAudio[n]).play();
+    });
+    btn.addEventListener('mouseup',()=>btn.classList.remove('active'));
+    btn.addEventListener('mouseleave',()=>btn.classList.remove('active'));
+    btn.addEventListener('touchstart',e=>{
+        e.preventDefault();
+        btn.classList.add('active');
+        playKeySound();
+        if(keyAudio[n]) new Audio(keyAudio[n]).play();
+    });
+    btn.addEventListener('touchend',()=>btn.classList.remove('active'));
+});
+
+// --- 录音（核心修改：结束后转 base64 保存）---
+for(let i=0;i<4;i++){
+    document.getElementById('s'+(i+1)).onclick = async ()=>{
+        tipText.innerText = `正在录制按键${i+1}声音...`;
+        let stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        audioStream[i] = stream;
+        let rec = new MediaRecorder(stream);
+        recordIns[i] = rec;
+        let chunks = [];
+        rec.ondataavailable = e=>chunks.push(e.data);
+        rec.onstop = async ()=>{
+            let blob = new Blob(chunks,{type:'audio/mpeg'});
+            // 转 base64 存入 keyAudio
+            keyAudio[i] = await blobToBase64(blob);
+            saveUserConfig();
+            tipText.innerText = `按键${i+1}录制完成！`;
+            setTimeout(()=>tipText.innerText='就绪',2000);
+            audioStream[i].getTracks().forEach(t=>t.stop());
+            recordIns[i] = null;
+        };
+        rec.start();
+    };
+    document.getElementById('e'+(i+1)).onclick = ()=>{
+        if(recordIns[i]) recordIns[i].stop();
+    };
+    document.getElementById('p'+(i+1)).onclick = ()=>{
+        if(keyAudio[i]){
+            new Audio(keyAudio[i]).play();
+            tipText.innerText = `试听按键${i+1}录音`;
+            setTimeout(()=>tipText.innerText='就绪',1500);
+        }else{
+            tipText.innerText = `暂无按键${i+1}录音`;
+            setTimeout(()=>tipText.innerText='就绪',1500);
+        }
+    };
+}
+
+// --- 音效音量 ---
+document.getElementById('soundSel').onchange = function(){
+    if(this.value==='light')soundVol=0.2;
+    if(this.value==='mid')soundVol=0.35;
+    if(this.value==='loud')soundVol=0.5;
+    saveUserConfig();
+};
+
+// --- 保存设置 ---
+document.getElementById('saveBtn').onclick = ()=>{
+    let btns = document.querySelectorAll('.press-btn');
+    btns[0].innerText = in1.value;
+    btns[1].innerText = in2.value;
+    btns[2].innerText = in3.value;
+    btns[3].innerText = in4.value;
+    btns[0].style.background = c1.value;
+    btns[1].style.background = c2.value;
+    btns[2].style.background = c3.value;
+    btns[3].style.background = c4.value;
+    saveUserConfig();
+    setBox.style.display = 'none';
+};
+
+// --- 设置面板 ---
+openSet.onclick = ()=>{
+    setBox.style.display = setBox.style.display==='block'?'none':'block';
+};
+
+// --- 导出BAK（含所有用户+所有录音base64）---
+exportBak.onclick = function(){
+    saveUserConfig();
+    let jsonStr = JSON.stringify(userData);
+    let blob = new Blob([jsonStr],{type:"application/octet-stream"});
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = "键盘用户配置.bak";
+    a.click();
+    tipText.innerText="BAK存档导出成功！";
+    setTimeout(()=>tipText.innerText="就绪",1500);
+};
+
+// --- 导入BAK ---
+importBak.onclick = function(){
+    fileInput.click();
+};
+fileInput.onchange = function(e){
+    let file = e.target.files[0];
+    if(!file)return;
+    let reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload=function(){
+        try{
+            let data = JSON.parse(reader.result);
+            userData = data;
+            saveToLocal();
+            refreshUserSelect();
+            nowUser = Object.keys(userData)[0];
+            userSel.value = nowUser;
+            loadUserConfig();
+            tipText.innerText="BAK用户配置导入成功！";
+        }catch(err){
+            tipText.innerText="存档格式错误！";
+        }
+        setTimeout(()=>tipText.innerText="就绪",1500);
+        fileInput.value="";
+    }
+};
+
+// --- 初始化 ---
+initUserData();
+loadUserConfig();
+</script>
+</body>
+</html>
